@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-04-30",
+    "ratio": 192.92540874046168,
+    "collateral_value": 889202041010.0,
+    "financing_amt": 460904578000,
+    "matched": 1196,
+    "unmatched": 69
+  },
+  {
+    "date": "2026-06-08",
+    "ratio": 191.06628726175882,
+    "collateral_value": 1052798554810.0,
+    "financing_amt": 551012201000,
+    "matched": 1203,
+    "unmatched": 73
+  },
+  {
+    "date": "2026-06-24",
+    "ratio": 200.36972437477723,
+    "collateral_value": 1217158455900.0,
+    "financing_amt": 607456271000,
+    "matched": 1208,
+    "unmatched": 71
+  },
+  {
+    "date": "2026-06-26",
+    "ratio": 191.05511812224194,
+    "collateral_value": 1128994141870.0,
+    "financing_amt": 590925882000,
+    "matched": 1209,
+    "unmatched": 70
+  },
+  {
+    "date": "2026-07-17",
+    "ratio": 170.5306960598694,
+    "collateral_value": 1002656565990.0,
+    "financing_amt": 587962513000,
+    "matched": 1216,
+    "unmatched": 68
+  },
+  {
+    "date": "2026-07-31",
+    "ratio": 169.81165367301398,
+    "collateral_value": 861730923210.0,
+    "financing_amt": 507462771000,
+    "matched": 1225,
+    "unmatched": 66
+  },
+  {
+    "date": "2026-07-29",
+    "ratio": 158.0
+  },
+  {
+    "date": "2026-07-30",
+    "ratio": 156.7
+  }
+]

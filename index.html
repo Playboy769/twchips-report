@@ -82,6 +82,18 @@
   }
   .header h1 { font-size: 21px; font-weight: 600; margin: 0 0 4px; text-wrap: balance; }
   .header .subtitle { font-size: 13.5px; color: var(--text-secondary); margin: 0; }
+  .snapshot-note {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--s-yellow);
+    background: var(--surface-1);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .snapshot-note b { color: var(--text-primary); font-weight: 600; }
 
   .nav {
     position: sticky; top: 0; z-index: 10;
@@ -285,7 +297,8 @@
 <div class="viz-root">
   <div class="header">
     <h1>三大法人資料能怎麼切入市場結構</h1>
-    <p class="subtitle">2026/04/30 – 2026/07/31（近 3 個月，64 個交易日）· 資料來源：TAIFEX／TWSE，透過 twchips 抓取 · 7 個分析角度 + 3 段多空論點深化</p>
+    <p class="subtitle">圖表資料：<span id="live-range">2026/04/30 – 2026/07/31</span>（<span id="live-days">64</span> 個交易日，固定 04/30 起算，每日自動延伸）· 資料來源：TAIFEX／TWSE，透過 twchips 抓取 · 7 個分析角度 + 3 段多空論點深化</p>
+    <p class="snapshot-note">⚠ 文字分析結論（各段「多方論點／空方論點」與 finding 段落）為 <b>2026/07/31</b> 資料快照，<b>不會隨每日更新的圖表變動</b>——圖表可能已經延伸到更新的交易日，裡面提到的「全期最高／最低」等描述僅適用於截至 07/31 的資料，之後的走勢請以圖表上的實際數字為準。</p>
   </div>
 
   <nav class="nav">
@@ -1094,14 +1107,7 @@
   // ÷ aggregate financing amount; too expensive to run for all 64 days, so this is a
   // sparse series, not a daily one like the other charts)
   {
-    const MAINT = [
-      { date: "04/30", ratio: 192.9 },
-      { date: "06/08", ratio: 191.1 },
-      { date: "06/24", ratio: 200.4 },
-      { date: "06/26", ratio: 191.1 },
-      { date: "07/17", ratio: 170.5 },
-      { date: "07/31", ratio: 169.8 },
-    ];
+    const MAINT = [{"date": "04/30", "ratio": 192.92540874046168}, {"date": "06/08", "ratio": 191.06628726175882}, {"date": "06/24", "ratio": 200.36972437477723}, {"date": "06/26", "ratio": 191.05511812224194}, {"date": "07/17", "ratio": 170.5306960598694}, {"date": "07/29", "ratio": 158.0}, {"date": "07/30", "ratio": 156.7}, {"date": "07/31", "ratio": 169.81165367301398}];
     const maintDates = MAINT.map(r => r.date);
     const maintVals = MAINT.map(r => r.ratio);
     const geo = renderLineChart("chart-8b-maint", maintDates, [
