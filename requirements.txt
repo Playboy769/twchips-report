@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+pandas
+requests
+git+https://github.com/catcat222222/twchips

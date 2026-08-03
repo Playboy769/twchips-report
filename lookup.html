@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>個股融資融券／三大法人查詢</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page:           #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --row-hover:      rgba(11,11,11,0.03);
+    --scrollbar-thumb:       #6b6a64;
+    --scrollbar-thumb-hover: #4a4944;
+    --s-dealer:  #2a78d6;
+    --s-trust:   #eb6834;
+    --s-foreign: #1baf7a;
+    --s-yellow:  #eda100;
+    --s-magenta: #e87ba4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page:           #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --row-hover:      rgba(255,255,255,0.04);
+      --scrollbar-thumb:       #55534e;
+      --scrollbar-thumb-hover: #726f68;
+      --s-dealer:  #3987e5;
+      --s-trust:   #d95926;
+      --s-foreign: #199e70;
+      --s-yellow:  #c98500;
+      --s-magenta: #d55181;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; }
+  .back-link {
+    font-size: 12.5px; color: var(--text-secondary); text-decoration: none;
+    display: inline-block; margin-bottom: 14px;
+  }
+  .back-link:hover { color: var(--text-primary); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--text-secondary); margin: 0 0 20px; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  #code-input {
+    flex: 1;
+    font-family: inherit; font-size: 15px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text-primary);
+  }
+  #code-input:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 1px; }
+  #search-btn {
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: var(--s-dealer);
+    color: #fff;
+    cursor: pointer;
+  }
+  #search-btn:hover { filter: brightness(1.08); }
+  #search-btn:disabled { opacity: 0.6; cursor: default; }
+  #search-btn:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 2px; }
+
+  #status { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; min-height: 18px; }
+  #status.error { color: var(--s-magenta); }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-top: 16px;
+    display: none;
+  }
+  .card.show { display: block; }
+  .stock-title { font-size: 17px; font-weight: 600; margin: 0 0 2px; }
+  .stock-code { font-size: 12.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; margin: 0 0 16px; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 4px; }
+  .stat-tile { border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+  .stat-label { font-size: 11.5px; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .chart-title { font-size: 12px; color: var(--text-secondary); margin: 20px 0 6px; }
+  .legend { display: flex; gap: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary); }
+  .legend-item .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+  .chart-wrap { position: relative; width: 100%; overflow-x: auto; }
+  .chart-wrap, .chart-wrap { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+  .chart-wrap::-webkit-scrollbar { height: 6px; }
+  .chart-wrap::-webkit-scrollbar-track { background: transparent; }
+  .chart-wrap::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  .chart-wrap::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+  svg.chart { display: block; width: 100%; height: auto; }
+  .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .tick-label { fill: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .x-label { fill: var(--text-muted); font-size: 10px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+  .bar { cursor: pointer; }
+  .line-path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .crosshair-line { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; pointer-events: none; }
+  .crosshair-line.show { opacity: 1; }
+  .crosshair-hitbox { fill: transparent; pointer-events: all; cursor: crosshair; }
+
+  .tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 11.5px;
+    color: var(--text-primary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    opacity: 0; z-index: 1000;
+    white-space: nowrap;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .t-date { color: var(--text-secondary); font-size: 10.5px; margin-bottom: 3px; }
+  .tooltip .t-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .tooltip .t-dot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+  .tooltip .t-val { margin-left: auto; font-variant-numeric: tabular-nums; padding-left: 10px; }
+
+  .note { font-size: 11px; color: var(--text-muted); margin-top: 18px; line-height: 1.6; }
+
+  @media (max-width: 480px) {
+    .stat-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <a class="back-link" href="/">← 回市場結構報告</a>
+  <h1>個股融資融券／三大法人查詢</h1>
+  <p class="subtitle">輸入股票代號，查看近 20 個交易日的融資融券餘額與三大法人買賣超走勢 · 資料透過 twchips 抓取</p>
+
+  <div class="search-row">
+    <input type="text" id="code-input" placeholder="輸入股票代號，例如 2330" autocomplete="off" inputmode="numeric">
+    <button id="search-btn" type="button">查詢</button>
+  </div>
+  <div id="status"></div>
+
+  <div class="card" id="result-card">
+    <p class="stock-title" id="stock-title"></p>
+    <p class="stock-code" id="stock-code"></p>
+
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="stat-label">融資餘額</div>
+        <div class="stat-value" id="stat-financing">—</div>
+        <div class="stat-sub" id="stat-financing-sub">張</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">融券餘額</div>
+        <div class="stat-value" id="stat-short">—</div>
+        <div class="stat-sub" id="stat-short-sub">張</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">融資使用率</div>
+        <div class="stat-value" id="stat-financing-rate">—</div>
+        <div class="stat-sub">融資餘額 ÷ 次一營業日限額</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">融券使用率</div>
+        <div class="stat-value" id="stat-short-rate">—</div>
+        <div class="stat-sub">融券餘額 ÷ 次一營業日限額</div>
+      </div>
+    </div>
+
+    <p class="chart-title">融資餘額（張）</p>
+    <div class="legend"><div class="legend-item"><span class="dot" style="background:var(--s-yellow)"></span>融資餘額</div></div>
+    <div class="chart-wrap"><svg class="chart" id="chart-financing" viewBox="0 0 640 180" preserveAspectRatio="xMidYMid meet"></svg></div>
+
+    <p class="chart-title">融券餘額（張）</p>
+    <div class="legend"><div class="legend-item"><span class="dot" style="background:var(--s-magenta)"></span>融券餘額</div></div>
+    <div class="chart-wrap"><svg class="chart" id="chart-short" viewBox="0 0 640 180" preserveAspectRatio="xMidYMid meet"></svg></div>
+
+    <p class="chart-title">三大法人買賣超（股）</p>
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background:var(--s-dealer)"></span>自營商</div>
+      <div class="legend-item"><span class="dot" style="background:var(--s-trust)"></span>投信</div>
+      <div class="legend-item"><span class="dot" style="background:var(--s-foreign)"></span>外資及陸資</div>
+    </div>
+    <div class="chart-wrap"><svg class="chart" id="chart-institutional" viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+
+    <p class="note">首次查詢新的交易日需要即時向 TWSE 抓取，可能需要數十秒；同一批交易日之後查詢其他股票會直接使用快取，速度會快很多。僅供參考，非投資建議。</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(svgNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  function niceTicks(min, max, count) {
+    const span = max - min || 1;
+    const rawStep = span / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const norm = rawStep / mag;
+    let step;
+    if (norm < 1.5) step = 1 * mag;
+    else if (norm < 3) step = 2 * mag;
+    else if (norm < 7) step = 5 * mag;
+    else step = 10 * mag;
+    const niceMin = Math.floor(min / step) * step;
+    const niceMax = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let t = niceMin; t <= niceMax + step * 0.001; t += step) ticks.push(Math.round(t * 100) / 100);
+    return ticks;
+  }
+
+  function attachCrosshair(svg, { marginL, marginR, marginT, marginB, W, H, indexAtX, xForIndex, dates, tooltip, buildRows, unit }) {
+    const line = el("line", { x1: 0, x2: 0, y1: marginT, y2: H - marginB, class: "crosshair-line" });
+    const hit = el("rect", { x: marginL, y: marginT, width: Math.max(0, W - marginL - marginR), height: Math.max(0, H - marginT - marginB), class: "crosshair-hitbox" });
+    svg.appendChild(line);
+    svg.appendChild(hit);
+    function onMove(evt) {
+      const rect = svg.getBoundingClientRect();
+      if (rect.width === 0) return;
+      const scaleX = W / rect.width;
+      const localX = (evt.clientX - rect.left) * scaleX;
+      const i = indexAtX(localX);
+      const x = xForIndex(i);
+      line.setAttribute("x1", x); line.setAttribute("x2", x);
+      line.classList.add("show");
+      if (tooltip) tooltip.show(evt, dates[i], buildRows(i), unit);
+    }
+    hit.addEventListener("mousemove", onMove);
+    hit.addEventListener("mouseenter", onMove);
+    hit.addEventListener("mouseleave", () => {
+      line.classList.remove("show");
+      if (tooltip) tooltip.hide();
+    });
+  }
+
+  function tooltipFor(svg) {
+    const div = document.createElement("div");
+    div.className = "tooltip";
+    document.body.appendChild(div);
+    return {
+      show(evt, date, rows, unit) {
+        div.innerHTML = `<div class="t-date">${date}</div>` + rows.map(r => `
+          <div class="t-row">
+            <span class="t-dot" style="background:${r.color}"></span>
+            <span>${r.label}</span>
+            <span class="t-val">${(r.value == null ? "—" : (r.value > 0 ? "+" : "") + r.value.toLocaleString("en-US"))}${unit || ""}</span>
+          </div>`).join("");
+        div.classList.add("show");
+        this.move(evt);
+      },
+      move(evt) {
+        const w = div.offsetWidth, h = div.offsetHeight;
+        let left = evt.clientX + 14, top = evt.clientY + 14;
+        if (left + w > window.innerWidth - 8) left = evt.clientX - w - 14;
+        if (top + h > window.innerHeight - 8) top = evt.clientY - h - 14;
+        div.style.left = left + "px"; div.style.top = top + "px";
+      },
+      hide() { div.classList.remove("show"); }
+    };
+  }
+
+  function renderLineChart(svgId, dates, seriesList, opts) {
+    opts = opts || {};
+    const svg = document.getElementById(svgId);
+    svg.innerHTML = "";
+    const W = 640, H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const marginL = 60, marginR = 16, marginT = 16, marginB = 26;
+    const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
+
+    let allVals = [];
+    seriesList.forEach(s => allVals = allVals.concat(s.values.filter(v => v != null)));
+    if (allVals.length === 0) allVals = [0, 1];
+    const dataMin = Math.min(...allVals), dataMax = Math.max(...allVals);
+    const pad = (dataMax - dataMin) * 0.1 || 1;
+    const ticks = niceTicks(dataMin - pad, dataMax + pad, 4);
+    const yMin = ticks[0], yMax = ticks[ticks.length - 1];
+    const yToPx = v => marginT + plotH * (1 - (v - yMin) / (yMax - yMin));
+    const xStep = plotW / Math.max(1, dates.length - 1);
+    const xToPx = i => marginL + i * xStep;
+
+    ticks.forEach(t => {
+      const y = yToPx(t);
+      svg.appendChild(el("line", { x1: marginL, x2: W - marginR, y1: y, y2: y, class: (yMin < 0 && yMax > 0 && Math.abs(t) < 1e-9) ? "baseline" : "gridline" }));
+      const label = el("text", { x: marginL - 8, y: y + 3, class: "tick-label", "text-anchor": "end" });
+      label.textContent = t.toLocaleString();
+      svg.appendChild(label);
+    });
+
+    seriesList.forEach(s => {
+      let path = "", started = false;
+      dates.forEach((d, i) => {
+        if (s.values[i] == null) return;
+        const x = xToPx(i), y = yToPx(s.values[i]);
+        path += (!started ? "M" : "L") + x + " " + y + " ";
+        started = true;
+      });
+      svg.appendChild(el("path", { d: path, class: "line-path", stroke: s.color }));
+      dates.forEach((d, i) => {
+        if (s.values[i] == null) return;
+        const x = xToPx(i), y = yToPx(s.values[i]);
+        svg.appendChild(el("circle", { cx: x, cy: y, r: 3.5, fill: s.color, stroke: "var(--surface-1)", "stroke-width": 1.5 }));
+      });
+    });
+
+    const stride = Math.max(1, Math.ceil(dates.length / 8));
+    dates.forEach((d, i) => {
+      if (i % stride === 0 || i === dates.length - 1) {
+        const xl = el("text", { x: xToPx(i), y: H - marginB + 15, class: "x-label" });
+        xl.textContent = d.slice(5).replace("-", "/");
+        svg.appendChild(xl);
+      }
+    });
+
+    if (opts.tooltip) {
+      attachCrosshair(svg, {
+        marginL, marginR, marginT, marginB, W, H, dates, tooltip: opts.tooltip, unit: opts.unit,
+        indexAtX: (x) => Math.max(0, Math.min(dates.length - 1, Math.round((x - marginL) / xStep))),
+        xForIndex: (i) => xToPx(i),
+        buildRows: (i) => seriesList.map(s => ({ label: s.label, color: s.color, value: s.values[i] })),
+      });
+    }
+  }
+
+  function renderBarChart(svgId, dates, seriesList, opts) {
+    opts = opts || {};
+    const svg = document.getElementById(svgId);
+    svg.innerHTML = "";
+    const W = 640, H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const marginL = 60, marginR = 16, marginT = 16, marginB = 26;
+    const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
+
+    let allVals = [];
+    seriesList.forEach(s => allVals = allVals.concat(s.values.filter(v => v != null)));
+    if (allVals.length === 0) allVals = [0, 1];
+    const dataMin = Math.min(0, ...allVals), dataMax = Math.max(0, ...allVals);
+    const ticks = niceTicks(dataMin, dataMax, 5);
+    const yMin = ticks[0], yMax = ticks[ticks.length - 1];
+    const yToPx = v => marginT + plotH * (1 - (v - yMin) / (yMax - yMin));
+    const zeroY = yToPx(0);
+
+    ticks.forEach(t => {
+      const y = yToPx(t);
+      svg.appendChild(el("line", { x1: marginL, x2: W - marginR, y1: y, y2: y, class: Math.abs(t) < 1e-9 ? "baseline" : "gridline" }));
+      const label = el("text", { x: marginL - 8, y: y + 3, class: "tick-label", "text-anchor": "end" });
+      label.textContent = t.toLocaleString();
+      svg.appendChild(label);
+    });
+
+    const groupW = plotW / dates.length;
+    const n = seriesList.length;
+    const gap = 1.5;
+    const barW = Math.max(2, Math.min(12, (groupW - 4) / n - gap));
+    const totalBarsW = n * barW + (n - 1) * gap;
+    const stride = Math.max(1, Math.ceil(dates.length / 8));
+
+    dates.forEach((d, i) => {
+      const groupX = marginL + i * groupW;
+      const startX = groupX + (groupW - totalBarsW) / 2;
+      seriesList.forEach((s, si) => {
+        const v = s.values[i];
+        if (v == null) return;
+        const x = startX + si * (barW + gap);
+        const y0 = zeroY, y1 = yToPx(v);
+        const top = Math.min(y0, y1), height = Math.max(Math.abs(y1 - y0), 1);
+        svg.appendChild(el("rect", { x, y: top, width: barW, height, fill: s.color, rx: Math.min(2, barW / 3), class: "bar" }));
+      });
+      if (i % stride === 0 || i === dates.length - 1) {
+        const xl = el("text", { x: groupX + groupW / 2, y: H - marginB + 15, class: "x-label" });
+        xl.textContent = d.slice(5).replace("-", "/");
+        svg.appendChild(xl);
+      }
+    });
+
+    if (opts.tooltip) {
+      attachCrosshair(svg, {
+        marginL, marginR, marginT, marginB, W, H, dates, tooltip: opts.tooltip, unit: opts.unit,
+        indexAtX: (x) => Math.max(0, Math.min(dates.length - 1, Math.floor((x - marginL) / groupW))),
+        xForIndex: (i) => marginL + i * groupW + groupW / 2,
+        buildRows: (i) => seriesList.map(s => ({ label: s.label, color: s.color, value: s.values[i] })),
+      });
+    }
+  }
+
+  const input = document.getElementById("code-input");
+  const btn = document.getElementById("search-btn");
+  const status = document.getElementById("status");
+  const card = document.getElementById("result-card");
+
+  async function runSearch() {
+    const code = input.value.trim();
+    if (!code) return;
+    btn.disabled = true;
+    status.className = "";
+    status.textContent = "查詢中，第一次查詢新的交易日可能要等 20~40 秒…";
+    card.classList.remove("show");
+
+    try {
+      const res = await fetch(`/api/stock/${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        status.className = "error";
+        status.textContent = data.detail || "查詢失敗";
+        return;
+      }
+      status.textContent = "";
+      renderResult(data);
+      card.classList.add("show");
+    } catch (e) {
+      status.className = "error";
+      status.textContent = "連線失敗，請稍後再試";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderResult(data) {
+    document.getElementById("stock-title").textContent = data.name;
+    document.getElementById("stock-code").textContent = data.code;
+
+    const m = data.margin;
+    const last = m[m.length - 1] || {};
+    const fmt = (v) => v == null ? "—" : v.toLocaleString("en-US");
+    const rate = (bal, lim) => (bal == null || lim == null || lim === 0) ? "—" : ((bal / lim) * 100).toFixed(1) + "%";
+
+    document.getElementById("stat-financing").textContent = fmt(last.financing_balance);
+    document.getElementById("stat-short").textContent = fmt(last.short_balance);
+    document.getElementById("stat-financing-rate").textContent = rate(last.financing_balance, last.financing_limit);
+    document.getElementById("stat-short-rate").textContent = rate(last.short_balance, last.short_limit);
+    document.getElementById("stat-financing-sub").textContent = `張 · ${data.dates[data.dates.length - 1]}`;
+    document.getElementById("stat-short-sub").textContent = `張 · ${data.dates[data.dates.length - 1]}`;
+
+    const tt1 = tooltipFor();
+    renderLineChart("chart-financing", data.dates, [
+      { key: "fin", label: "融資餘額", color: "var(--s-yellow)", values: m.map(r => r.financing_balance) },
+    ], { unit: " 張", tooltip: tt1 });
+
+    const tt2 = tooltipFor();
+    renderLineChart("chart-short", data.dates, [
+      { key: "short", label: "融券餘額", color: "var(--s-magenta)", values: m.map(r => r.short_balance) },
+    ], { unit: " 張", tooltip: tt2 });
+
+    const tt3 = tooltipFor();
+    renderBarChart("chart-institutional", data.dates, [
+      { key: "dealer", label: "自營商", color: "var(--s-dealer)", values: data.institutional.map(r => r.dealer_net) },
+      { key: "trust", label: "投信", color: "var(--s-trust)", values: data.institutional.map(r => r.trust_net) },
+      { key: "foreign", label: "外資及陸資", color: "var(--s-foreign)", values: data.institutional.map(r => r.foreign_net) },
+    ], { unit: " 股", tooltip: tt3 });
+  }
+
+  btn.addEventListener("click", runSearch);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+})();
+</script>
+</body>
+</html>
