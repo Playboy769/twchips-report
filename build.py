@@ -323,6 +323,9 @@ def main():
         return 0
 
     candidates = weekdays_between(last_cached + dt.timedelta(days=1), target_end)
+    if not candidates:
+        print(f"no weekdays between {last_cached} and {target_end} (weekend gap); nothing to do")
+        return 0
     print(f"fetching {len(candidates)} candidate weekday(s): {candidates[0]} .. {candidates[-1]}")
 
     maint_dates_have = {r["date"] for r in maintenance}
