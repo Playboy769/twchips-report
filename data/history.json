@@ -2729,6 +2729,48 @@
       "buy": 425338164528,
       "sell": 441857771931,
       "net": -16519607403
+    },
+    {
+      "date": "2026-08-04",
+      "category": "自營商(自行買賣)",
+      "buy": 9919729990,
+      "sell": 18594023919,
+      "net": -8674293929
+    },
+    {
+      "date": "2026-08-04",
+      "category": "自營商(避險)",
+      "buy": 31528976847,
+      "sell": 42283419627,
+      "net": -10754442780
+    },
+    {
+      "date": "2026-08-04",
+      "category": "投信",
+      "buy": 47011577882,
+      "sell": 19846417822,
+      "net": 27165160060
+    },
+    {
+      "date": "2026-08-04",
+      "category": "外資及陸資(不含外資自營商)",
+      "buy": 447661494099,
+      "sell": 453393026925,
+      "net": -5731532826
+    },
+    {
+      "date": "2026-08-04",
+      "category": "外資自營商",
+      "buy": 0,
+      "sell": 0,
+      "net": 0
+    },
+    {
+      "date": "2026-08-04",
+      "category": "合計",
+      "buy": 536121778818,
+      "sell": 534116888293,
+      "net": 2004890525
     }
   ],
   "taifex": [
@@ -5851,6 +5893,54 @@
       "oi_short_amt": 1192045,
       "oi_net_lots": -471193,
       "oi_net_amt": -929942
+    },
+    {
+      "date": "2026-08-04",
+      "category": "自營商",
+      "long_lots": 210441,
+      "long_amt": 134278,
+      "short_lots": 200656,
+      "short_amt": 112051,
+      "net_lots": 9785,
+      "net_amt": 22227,
+      "oi_long_lots": 209300,
+      "oi_long_amt": 115405,
+      "oi_short_lots": 474333,
+      "oi_short_amt": 286893,
+      "oi_net_lots": -265033,
+      "oi_net_amt": -171488
+    },
+    {
+      "date": "2026-08-04",
+      "category": "投信",
+      "long_lots": 953,
+      "long_amt": 1649,
+      "short_lots": 1460,
+      "short_amt": 12332,
+      "net_lots": -507,
+      "net_amt": -10683,
+      "oi_long_lots": 96878,
+      "oi_long_amt": 758475,
+      "oi_short_lots": 6532,
+      "oi_short_amt": 29963,
+      "oi_net_lots": 90346,
+      "oi_net_amt": 728512
+    },
+    {
+      "date": "2026-08-04",
+      "category": "外資及陸資",
+      "long_lots": 983963,
+      "long_amt": 1330700,
+      "short_lots": 987052,
+      "short_amt": 1318850,
+      "net_lots": -3089,
+      "net_amt": 11850,
+      "oi_long_lots": 287731,
+      "oi_long_amt": 252499,
+      "oi_short_lots": 763088,
+      "oi_short_amt": 1178047,
+      "oi_net_lots": -475357,
+      "oi_net_amt": -925548
     }
   ],
   "options": [
@@ -10923,6 +11013,84 @@
       "net_amt": 4430,
       "oi_net_lots": 5675,
       "oi_net_amt": 28549
+    },
+    {
+      "date": "2026-08-04",
+      "side": "CALL",
+      "category": "自營商",
+      "buy_lots": 40730,
+      "buy_amt": 431447,
+      "sell_lots": 42689,
+      "sell_amt": 432533,
+      "net_lots": -1959,
+      "net_amt": -1086,
+      "oi_net_lots": 3771,
+      "oi_net_amt": 316893
+    },
+    {
+      "date": "2026-08-04",
+      "side": "CALL",
+      "category": "投信",
+      "buy_lots": 0,
+      "buy_amt": 0,
+      "sell_lots": 0,
+      "sell_amt": 0,
+      "net_lots": 0,
+      "net_amt": 0,
+      "oi_net_lots": -2671,
+      "oi_net_amt": -313419
+    },
+    {
+      "date": "2026-08-04",
+      "side": "CALL",
+      "category": "外資及陸資",
+      "buy_lots": 49084,
+      "buy_amt": 548910,
+      "sell_lots": 48446,
+      "sell_amt": 538847,
+      "net_lots": 638,
+      "net_amt": 10063,
+      "oi_net_lots": 2315,
+      "oi_net_amt": -56747
+    },
+    {
+      "date": "2026-08-04",
+      "side": "PUT",
+      "category": "自營商",
+      "buy_lots": 46672,
+      "buy_amt": 555316,
+      "sell_lots": 52731,
+      "sell_amt": 582939,
+      "net_lots": -6059,
+      "net_amt": -27622,
+      "oi_net_lots": -2682,
+      "oi_net_amt": 158612
+    },
+    {
+      "date": "2026-08-04",
+      "side": "PUT",
+      "category": "投信",
+      "buy_lots": 0,
+      "buy_amt": 0,
+      "sell_lots": 0,
+      "sell_amt": 0,
+      "net_lots": 0,
+      "net_amt": 0,
+      "oi_net_lots": 105,
+      "oi_net_amt": 375
+    },
+    {
+      "date": "2026-08-04",
+      "side": "PUT",
+      "category": "外資及陸資",
+      "buy_lots": 50835,
+      "buy_amt": 672961,
+      "sell_lots": 47520,
+      "sell_amt": 677131,
+      "net_lots": 3315,
+      "net_amt": -4170,
+      "oi_net_lots": 8990,
+      "oi_net_amt": 13563
     }
   ],
   "stock_2330": [
@@ -11380,6 +11548,13 @@
       "trust_net": 387450,
       "dealer_net": -1587400,
       "total_net": -10916897
+    },
+    {
+      "date": "2026-08-04",
+      "foreign_net": -12429517,
+      "trust_net": 433720,
+      "dealer_net": -2326919,
+      "total_net": -14322716
     }
   ],
   "margin": [
@@ -11837,6 +12012,13 @@
       "short_net_lots": -3071,
       "financing_balance": 9120700,
       "short_balance": 185322
+    },
+    {
+      "date": "2026-08-04",
+      "financing_net_lots": -82238,
+      "short_net_lots": -12894,
+      "financing_balance": 9032013,
+      "short_balance": 196970
     }
   ],
   "skipped_dates": [
