@@ -552,6 +552,7 @@
           <div class="legend-item"><span class="dash" style="background:var(--s-violet)"></span>PUT/CALL 未平倉比</div>
         </div>
         <div class="chart-wrap"><svg class="chart" id="chart-8c-ratio" viewBox="0 0 860 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+        <p class="chart-title">座標軸上限 20 倍：超過的點（分母趨近於零時的公式假象，見下方說明）釘在圖表上緣並標出實際倍數，避免單一極端值把其餘天數全部壓平看不出走勢。</p>
       </div>
 
       <div class="thesis-block">
@@ -560,6 +561,7 @@
           <li>累積 PUT 淨口數雖是 <span class="num">+30,468</span> 口，累積 PUT 淨金額只有 <span class="num">−0.42</span> 億；累積 CALL 淨口數 <span class="num">−21,952</span> 口，金額也只有 <span class="num">−8.51</span> 億。口數的巨大偏斜換算成權利金後兩邊都小到可忽略——外資買的 PUT 多數是價外很深、單口成本極低的「樂透式」尾端避險，真正的資金承諾很小。</li>
           <li>07/31 現貨大幅反彈當天（見 <a href="#sec5">角度 5</a>），選擇權同步出現乾淨的解除避險訊號：PUT 淨口數 <span class="num">−5,181</span>（大量賣出/獲利了結），CALL 淨口數 <span class="num">+1,409</span>（回補做多）——避險部位可以一天內快速反轉，不是頑固的結構性看法。</li>
           <li>06/24 和 07/29 這兩個現貨重挫日，CALL 和 PUT 淨口數同時是負的——那兩天外資是在整體降低選擇權曝險，不是加碼買保護，屬於偏溫和的風險趨避。</li>
+          <li>下圖 PUT/CALL 未平倉比在 06/29 單日暴衝到 <b>468.9 倍</b>，經比對期交所三大法人原始資料，當天外資 CALL 未平倉淨變動只有 <span class="num">+9</span> 口（幾乎打平），PUT 淨變動 <span class="num">+4,220</span> 口——分母趨近於零把比值放大成天文數字，是公式的數學假象，不是外資單日把避險力道拉高了 469 倍，讀圖時不宜把這根尖峰單獨當成空方訊號解讀。</li>
         </ul>
       </div>
       <div class="thesis-block">
@@ -781,10 +783,11 @@
     let allVals = [];
     seriesList.forEach(s => allVals = allVals.concat(s.values));
     const dataMin = Math.min(...allVals), dataMax = Math.max(...allVals);
-    const pad = (dataMax - dataMin) * 0.08 || 1;
-    const ticks = niceTicks(dataMin - pad, dataMax + pad, 4);
+    const capMax = opts.yMax != null ? Math.min(dataMax, opts.yMax) : dataMax;
+    const pad = (capMax - dataMin) * 0.08 || 1;
+    const ticks = niceTicks(dataMin - pad, capMax + pad, 4);
     const yMin = ticks[0], yMax = ticks[ticks.length - 1];
-    const yToPx = v => marginT + plotH * (1 - (v - yMin) / (yMax - yMin));
+    const yToPx = v => marginT + plotH * (1 - (Math.min(v, capMax) - yMin) / (yMax - yMin));
     const xStep = plotW / (dates.length - 1);
     const xToPx = i => marginL + i * xStep;
     const stride = labelStrideFor(dates.length);
@@ -1135,11 +1138,13 @@
   }
   {
     const ratioVals = A.options_series.map(r => Math.abs(r.put_oi_net_lots) / Math.max(1, Math.abs(r.call_oi_net_lots)));
+    const RATIO_CAP = 20;
     const geo = renderLineChart("chart-8c-ratio", mmdd, [
       { key: "ratio", label: "PUT/CALL 未平倉比", color: "var(--s-violet)", values: ratioVals },
-    ], { unit: " 倍", tooltip: tooltipFor("chart-8c-ratio") });
-    const maxIdx = ratioVals.indexOf(Math.max(...ratioVals));
-    addPointLabel("chart-8c-ratio", geo, maxIdx, ratioVals[maxIdx], `${ratioVals[maxIdx].toFixed(1)} 倍`, true);
+    ], { unit: " 倍", tooltip: tooltipFor("chart-8c-ratio"), yMax: RATIO_CAP });
+    ratioVals.forEach((v, i) => {
+      if (v > RATIO_CAP) addPointLabel("chart-8c-ratio", geo, i, v, `${v.toFixed(1)} 倍`, true);
+    });
   }
 })();
 </script>
