@@ -75,70 +75,118 @@
     color: var(--text-primary);
     padding: 0 0 60px;
   }
-  .header {
-    max-width: 900px;
+  /* three-column shell: fixed widths, never collapses — below --shell-min the
+     whole page scrolls horizontally instead of reflowing the columns */
+  .page-shell {
+    /* min-width sized so the centre column never drops below the ~800px of chart
+       area the single-column layout used to have — below this the page scrolls
+       sideways rather than squeezing the charts */
+    min-width: 1440px;
+    max-width: 1680px;
     margin: 0 auto;
-    padding: 32px 24px 16px;
+    padding: 0 24px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr) 276px;
+    gap: 22px;
+    align-items: start;
+  }
+  .rail {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+  .rail, .side-nav-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  .rail::-webkit-scrollbar { width: 6px; }
+  .rail::-webkit-scrollbar-track { background: transparent; }
+  .rail::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  .rail::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+  .header {
+    padding: 32px 0 16px;
   }
   .header h1 { font-size: 21px; font-weight: 600; margin: 0 0 4px; text-wrap: balance; }
   .header .subtitle { font-size: 13.5px; color: var(--text-secondary); margin: 0; }
-  .snapshot-note {
-    margin: 10px 0 0;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--s-yellow);
-    background: var(--surface-1);
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-  }
-  .snapshot-note b { color: var(--text-primary); font-weight: 600; }
 
-  .nav {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--page);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(6px);
+  /* left rail: the old two-tier top nav flattened into a vertical outline —
+     every group is expanded at once, so no click is needed to reach a section */
+  .side-nav {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
   }
-  .nav-groups, .nav-sub {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-  }
-  .nav-groups { padding: 10px 24px 0; }
-  .nav-sub { padding: 6px 24px 10px; border-top: 1px dashed var(--border); margin-top: 6px; padding-top: 8px; }
-  .nav-group-btn {
-    font-family: inherit;
-    font-size: 12px;
+  .side-nav .rail-title {
+    font-size: 11px;
     font-weight: 600;
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    white-space: nowrap;
-    flex: none;
-    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 10px 8px;
   }
-  .nav-group-btn:hover { color: var(--text-primary); }
-  .nav-group-btn.active { color: var(--text-primary); background: var(--row-hover); }
-  .nav-group-btn:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 1px; }
-  .nav-sub a {
+  .nav-group + .nav-group { margin-top: 12px; }
+  .nav-group-label {
     font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 0 8px;
+    margin-bottom: 4px;
+  }
+  .nav-group a {
+    display: block;
+    font-size: 12px;
     color: var(--text-muted);
     text-decoration: none;
-    padding: 4px 9px;
+    padding: 5px 8px;
     border-radius: 6px;
-    white-space: nowrap;
-    flex: none;
+    border-left: 2px solid transparent;
+    line-height: 1.4;
   }
-  .nav-sub a:hover { color: var(--text-primary); background: var(--row-hover); }
-  .nav-sub a:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 1px; }
+  .nav-group a:hover { color: var(--text-primary); background: var(--row-hover); }
+  .nav-group a.active {
+    color: var(--text-primary);
+    background: var(--row-hover);
+    border-left-color: var(--s-dealer);
+    font-weight: 600;
+  }
+  .nav-group a:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 1px; }
 
-  main { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  /* right rail: standing context that used to sit in the header / footer */
+  .rail-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+  }
+  .rail-card + .rail-card { margin-top: 14px; }
+  .rail-card .rail-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 8px;
+  }
+  .rail-card b { color: var(--text-primary); font-weight: 600; }
+  .rail-card p { margin: 0; }
+  .rail-card a { color: var(--s-dealer); text-decoration: underline; text-underline-offset: 2px; }
+  .rail-card a:hover { color: var(--text-primary); }
+  .rail-card.warn { border-left: 3px solid var(--s-yellow); }
+  .rail-key { display: flex; align-items: center; gap: 8px; }
+  .rail-key + .rail-key { margin-top: 6px; }
+  .rail-key .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+  main { min-width: 0; }
 
   section {
     background: var(--surface-1);
@@ -146,8 +194,9 @@
     border-radius: 12px;
     padding: 22px 24px;
     margin-top: 20px;
-    scroll-margin-top: 56px;
+    scroll-margin-top: 16px;
   }
+  section:first-child { margin-top: 0; }
   section .eyebrow {
     font-size: 11px;
     font-weight: 600;
@@ -222,20 +271,20 @@
 
   /* thin, dark-gray custom scrollbar — replaces the chunky OS default
      (thick thumb + arrow buttons) on every horizontally-scrolling chart/nav strip */
-  .chart-wrap, .nav-groups, .nav-sub {
+  .chart-wrap {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
-  .chart-wrap::-webkit-scrollbar, .nav-groups::-webkit-scrollbar, .nav-sub::-webkit-scrollbar { height: 6px; }
-  .chart-wrap::-webkit-scrollbar-track, .nav-groups::-webkit-scrollbar-track, .nav-sub::-webkit-scrollbar-track { background: transparent; }
-  .chart-wrap::-webkit-scrollbar-thumb, .nav-groups::-webkit-scrollbar-thumb, .nav-sub::-webkit-scrollbar-thumb {
+  .chart-wrap::-webkit-scrollbar { height: 6px; }
+  .chart-wrap::-webkit-scrollbar-track { background: transparent; }
+  .chart-wrap::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
-  .chart-wrap::-webkit-scrollbar-thumb:hover, .nav-groups::-webkit-scrollbar-thumb:hover, .nav-sub::-webkit-scrollbar-thumb:hover {
+  .chart-wrap::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover);
   }
-  .chart-wrap::-webkit-scrollbar-button, .nav-groups::-webkit-scrollbar-button, .nav-sub::-webkit-scrollbar-button {
+  .chart-wrap::-webkit-scrollbar-button {
     display: none;
     width: 0;
     height: 0;
@@ -285,29 +334,28 @@
   .align-cell { flex: none; display: flex; justify-content: center; align-items: center; }
 
   footer.note {
-    max-width: 900px; margin: 20px auto 0; padding: 0 24px;
+    margin: 20px 0 0;
     font-size: 11.5px; color: var(--text-muted); line-height: 1.6;
-  }
-
-  @media (max-width: 640px) {
-    .stat-row { grid-template-columns: 1fr; }
   }
 </style>
 
 <div class="viz-root">
+ <div class="page-shell">
   <div class="header">
     <h1>三大法人資料能怎麼切入市場結構</h1>
     <p class="subtitle">圖表資料：<span id="live-range">2026/04/30 – 2026/08/07</span>（<span id="live-days">69</span> 個交易日，固定 04/30 起算，每日自動延伸）· 資料來源：TAIFEX／TWSE，透過 twchips 抓取 · 7 個分析角度 + 3 段多空論點深化</p>
-    <p class="snapshot-note">⚠ 文字分析結論（各段「多方論點／空方論點」與 finding 段落）為 <b>2026/07/31</b> 資料快照，<b>不會隨每日更新的圖表變動</b>——圖表可能已經延伸到更新的交易日，裡面提到的「全期最高／最低」等描述僅適用於截至 07/31 的資料，之後的走勢請以圖表上的實際數字為準。</p>
-    <p style="margin:10px 0 0"><a href="/lookup" style="font-size:12.5px;color:var(--s-dealer);text-decoration:underline;text-underline-offset:2px">→ 查詢個股融資融券／三大法人（輸入任一股票代號）</a></p>
   </div>
 
-  <nav class="nav">
-    <div class="nav-groups" id="nav-groups"></div>
-    <div class="nav-sub" id="nav-sub"></div>
-  </nav>
+  <div class="layout">
 
-  <main>
+    <aside class="rail rail-left">
+      <nav class="side-nav">
+        <p class="rail-title">分析角度</p>
+        <div id="side-nav"></div>
+      </nav>
+    </aside>
+
+    <main>
 
     <section id="sec1">
       <p class="eyebrow">角度 1＋2 · 現貨 vs 期貨</p>
@@ -575,11 +623,43 @@
       <p class="thesis-note">整體來看最重要的修正：選擇權的「口數」故事（PUT 遠大於 CALL）跟「金額」故事（雙邊都接近打平）並不一致——光看口數容易高估外資的下檔保護力道，真正砸錢做保護的規模比口數看起來的溫和很多。</p>
     </section>
 
-  </main>
+    </main>
+
+    <aside class="rail rail-right">
+      <div class="rail-card warn">
+        <p class="rail-title">⚠ 文字快照警語</p>
+        <p>文字分析結論（各段「多方論點／空方論點」與 finding 段落）為 <b>2026/07/31</b> 資料快照，<b>不會隨每日更新的圖表變動</b>——圖表可能已經延伸到更新的交易日，裡面提到的「全期最高／最低」等描述僅適用於截至 07/31 的資料，之後的走勢請以圖表上的實際數字為準。</p>
+      </div>
+
+      <div class="rail-card">
+        <p class="rail-title">個股查詢</p>
+        <p><a href="/lookup">→ 查詢個股融資融券／三大法人（輸入任一股票代號）</a></p>
+      </div>
+
+      <div class="rail-card">
+        <p class="rail-title">色票對照</p>
+        <div class="rail-key"><span class="dot" style="background:var(--s-dealer)"></span>自營商</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-trust)"></span>投信</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-foreign)"></span>外資及陸資</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-violet)"></span>期貨（交易／未平倉）</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-green)"></span>選擇權 CALL</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-red)"></span>選擇權 PUT</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-yellow)"></span>融資</div>
+        <div class="rail-key"><span class="dot" style="background:var(--s-magenta)"></span>融券</div>
+      </div>
+
+      <div class="rail-card">
+        <p class="rail-title">資料範圍</p>
+        <p>文字分析涵蓋 2026/04/30–07/31，64 個交易日（近 3 個月，已扣除 5/1、6/19、7/10 三個休市日）；台指選擇權外資部位僅取「臺指選擇權」單一商品。</p>
+      </div>
+    </aside>
+
+  </div>
 
   <footer class="note">
     資料範圍：2026/04/30–07/31，64 個交易日（近 3 個月，已扣除 5/1、6/19、7/10 三個休市日）；台指選擇權外資部位僅取「臺指選擇權」單一商品。僅供市場結構分析參考，非投資建議。
   </footer>
+ </div>
 </div>
 
 <script>
@@ -589,7 +669,7 @@
   const fmt1 = (n) => (n > 0 ? "+" : "") + n.toLocaleString("en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1});
   const fmtInt = (n) => (n > 0 ? "+" : "") + Math.round(n).toLocaleString("en-US");
 
-  // ---- two-tier nav: category buttons (row 1) + that category's links (row 2) ----
+  // ---- left-rail nav: every category expanded as a vertical outline ----
   const NAV_GROUPS = [
     { id: "spot-futures", label: "現貨/期貨", items: [["#sec1", "1. 現貨×期貨"], ["#sec8a", "9. 期貨多空"]] },
     { id: "behavior", label: "法人行為", items: [["#sec3", "2. 自營商拆分"], ["#sec4", "3. 三方分歧"], ["#sec5", "4. 趨勢×事件"], ["#sec6", "5. 外資自營商"]] },
@@ -598,30 +678,56 @@
     { id: "margin", label: "融資融券", items: [["#sec7c", "8. 融資融券"], ["#sec8b", "10. 融資多空"]] },
   ];
   (function initNav() {
-    const groupsEl = document.getElementById("nav-groups");
-    const subEl = document.getElementById("nav-sub");
-    function renderSub(group) {
-      subEl.innerHTML = "";
-      group.items.forEach(([href, label]) => {
+    const navEl = document.getElementById("side-nav");
+    const linkFor = new Map();   // "#secX" → <a>
+
+    NAV_GROUPS.forEach(group => {
+      const wrap = document.createElement("div");
+      wrap.className = "nav-group";
+      const label = document.createElement("div");
+      label.className = "nav-group-label";
+      label.textContent = group.label;
+      wrap.appendChild(label);
+      group.items.forEach(([href, text]) => {
         const a = document.createElement("a");
         a.href = href;
-        a.textContent = label;
-        subEl.appendChild(a);
+        a.textContent = text;
+        wrap.appendChild(a);
+        linkFor.set(href, a);
       });
-    }
-    NAV_GROUPS.forEach((group, i) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "nav-group-btn" + (i === 0 ? " active" : "");
-      btn.textContent = group.label;
-      btn.addEventListener("click", () => {
-        groupsEl.querySelectorAll(".nav-group-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        renderSub(group);
-      });
-      groupsEl.appendChild(btn);
+      navEl.appendChild(wrap);
     });
-    renderSub(NAV_GROUPS[0]);
+
+    // scroll-spy: highlight whichever section is closest to the top of the viewport.
+    // NAV_GROUPS is ordered by category, not by position in the page, so sort back
+    // into document order before scanning — otherwise the "last one above the fold"
+    // test picks whatever happens to come last in the category list.
+    const sections = [...linkFor.keys()]
+      .map(href => document.querySelector(href))
+      .filter(Boolean)
+      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    if (!sections.length) return;
+
+    let raf = 0;
+    function sync() {
+      raf = 0;
+      let current = sections[0];
+      for (const sec of sections) {
+        if (sec.getBoundingClientRect().top <= 80) current = sec;
+      }
+      linkFor.forEach(a => a.classList.remove("active"));
+      const active = linkFor.get("#" + current.id);
+      if (active) active.classList.add("active");
+    }
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(sync); };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    // IntersectionObserver as the primary trigger: it re-fires whenever a section
+    // crosses the 80px line even in environments where scroll events are throttled
+    // or suppressed, with the scroll listener above as a belt-and-braces fallback
+    const io = new IntersectionObserver(schedule, { rootMargin: "-80px 0px 0px 0px", threshold: [0, 1] });
+    sections.forEach(sec => io.observe(sec));
+    sync();
   })();
 
   function el(tag, attrs) {
