@@ -21,9 +21,13 @@ History before ANALYSIS_START is backfilled by backfill.py and covers only the
 cheap datasets (institutional flows, margin, and TAIFEX futures where served),
 so `const L` exposes only those. See backfill.py for why.
 
-Safe to run repeatedly: if there are no new trading days, it's a no-op and
-exits without touching index.html, so the GitHub Action won't create empty
-commits.
+Safe to run repeatedly. Fetching is skipped when there are no new trading
+days, but the embedded blobs are regenerated from data/history.json on every
+run regardless — otherwise a change to the history that didn't come from the
+daily fetch (backfill.py widening it back to 2020, say) would never reach the
+page until the next trading day happened along. An unchanged rebuild produces
+an identical file, and the workflow's `git diff --quiet` guard turns that into
+no commit, so this costs nothing.
 """
 import datetime as dt
 import json
@@ -436,56 +440,66 @@ def main():
     if now_taipei.hour < SAME_DAY_READY_HOUR:
         target_end -= dt.timedelta(days=1)
 
+    # Fetching is conditional; rebuilding the page below is NOT. These used to
+    # be one path, so any run with no new session returned before touching
+    # index.html — meaning a change to history.json that didn't come from the
+    # daily fetch (a backfill widening it back to 2020, say) never reached the
+    # page until the next trading day happened to come along.
+    history_changed = False
     if last_cached >= target_end:
-        print(f"up to date (last cached {last_cached}, target {target_end}); nothing to do")
-        return 0
+        print(f"up to date (last cached {last_cached}, target {target_end}); no fetch needed")
+    else:
+        # Deliberately NOT filtering out `skipped_dates` here: a day lands there
+        # both for real holidays AND for transient TWSE rate-limiting (which
+        # backfill.py's notes put at ~4-5% of days), and the two are
+        # indistinguishable at this point. Re-attempting a known holiday costs one
+        # wasted request; permanently skipping a rate-limited day would silently
+        # lose a real trading session forever. Retrying is the safe direction.
+        candidates = weekdays_between(last_cached + dt.timedelta(days=1), target_end)
+        if not candidates:
+            print(f"no weekdays between {last_cached} and {target_end} (weekend gap); nothing to do")
+            return 0
+        print(f"fetching {len(candidates)} candidate weekday(s): {candidates[0]} .. {candidates[-1]} "
+              f"(Taipei now {now_taipei:%Y-%m-%d %H:%M})")
 
-    # Deliberately NOT filtering out `skipped_dates` here: a day lands there
-    # both for real holidays AND for transient TWSE rate-limiting (which
-    # backfill.py's notes put at ~4-5% of days), and the two are
-    # indistinguishable at this point. Re-attempting a known holiday costs one
-    # wasted request; permanently skipping a rate-limited day would silently
-    # lose a real trading session forever. Retrying is the safe direction.
-    candidates = weekdays_between(last_cached + dt.timedelta(days=1), target_end)
-    if not candidates:
-        print(f"no weekdays between {last_cached} and {target_end} (weekend gap); nothing to do")
-        return 0
-    print(f"fetching {len(candidates)} candidate weekday(s): {candidates[0]} .. {candidates[-1]} "
-          f"(Taipei now {now_taipei:%Y-%m-%d %H:%M})")
-
-    maint_dates_have = {r["date"] for r in maintenance}
-    new_dates = []
-    for d in candidates:
-        got_data = fetch_day(d, history)
-        if got_data:
-            new_dates.append(d)
-            if d in maint_dates_have:
-                print(f"  {d}: fetched (maintenance ratio already cached, skipping)")
-            else:
-                ratio = fetch_maintenance_ratio(d)
-                if ratio is not None:
-                    maintenance.append({"date": d, "ratio": ratio})
-                    maint_dates_have.add(d)
-                    print(f"  {d}: fetched, maintenance ratio = {ratio}%")
+        maint_dates_have = {r["date"] for r in maintenance}
+        new_dates = []
+        for d in candidates:
+            got_data = fetch_day(d, history)
+            if got_data:
+                new_dates.append(d)
+                if d in maint_dates_have:
+                    print(f"  {d}: fetched (maintenance ratio already cached, skipping)")
                 else:
-                    print(f"  {d}: fetched (maintenance ratio unavailable)")
+                    ratio = fetch_maintenance_ratio(d)
+                    if ratio is not None:
+                        maintenance.append({"date": d, "ratio": ratio})
+                        maint_dates_have.add(d)
+                        print(f"  {d}: fetched, maintenance ratio = {ratio}%")
+                    else:
+                        print(f"  {d}: fetched (maintenance ratio unavailable)")
+            else:
+                # Deduped: since candidates deliberately re-include previously
+                # skipped days (see above), a trailing holiday gets re-attempted
+                # on every run until a later day with data moves `last_cached`
+                # past it, and a plain append would stack a duplicate each time.
+                skipped = history.setdefault("skipped_dates", [])
+                if d not in skipped:
+                    skipped.append(d)
+                print(f"  {d}: no data (holiday or fetch failed; will retry next run)")
+
+        if new_dates:
+            history_changed = True
         else:
-            # Deduped: since candidates deliberately re-include previously
-            # skipped days (see above), a trailing holiday gets re-attempted
-            # on every run until a later day with data moves `last_cached`
-            # past it, and a plain append would stack a duplicate each time.
-            skipped = history.setdefault("skipped_dates", [])
-            if d not in skipped:
-                skipped.append(d)
-            print(f"  {d}: no data (holiday or fetch failed; will retry next run)")
+            print("no new trading days had data")
 
-    if not new_dates:
-        print("no new trading days had data; nothing to update")
-        return 0
+    if history_changed:
+        HISTORY_PATH.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
+        MAINTENANCE_PATH.write_text(json.dumps(maintenance, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    HISTORY_PATH.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
-    MAINTENANCE_PATH.write_text(json.dumps(maintenance, ensure_ascii=False, indent=2), encoding="utf-8")
-
+    # Always regenerate the embedded blobs from whatever history is on disk.
+    # The workflow's own `git diff --quiet` guard means an unchanged rebuild
+    # simply produces no commit, so doing this unconditionally is free.
     analysis_data = compute_analysis_data(history)
     longterm_data = compute_longterm_data(history)
     inject_into_index(analysis_data, longterm_data, maintenance)
