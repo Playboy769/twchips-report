@@ -157,7 +157,7 @@
 <main>
   <a class="back-link" href="/">← 回市場結構報告</a>
   <h1>個股融資融券／三大法人查詢</h1>
-  <p class="subtitle">輸入股票代號，查看近 20 個交易日的融資融券餘額與三大法人買賣超走勢 · 資料透過 twchips 抓取</p>
+  <p class="subtitle">輸入股票代號，查看近 60 個交易日的融資融券餘額與三大法人買賣超走勢 · 資料透過 twchips 抓取</p>
 
   <div class="search-row">
     <input type="text" id="code-input" placeholder="輸入股票代號，例如 2330" autocomplete="off" inputmode="numeric">
@@ -208,7 +208,7 @@
     </div>
     <div class="chart-wrap"><svg class="chart" id="chart-institutional" viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet"></svg></div>
 
-    <p class="note">首次查詢新的交易日需要即時向 TWSE 抓取，可能需要數十秒；同一批交易日之後查詢其他股票會直接使用快取，速度會快很多。僅供參考，非投資建議。</p>
+    <p class="note">首次查詢新的交易日需要即時向 TWSE 抓取（近 60 個交易日，約 1~3 分鐘）；同一批交易日之後查詢其他股票會直接使用快取，速度會快很多。僅供參考，非投資建議。</p>
   </div>
 </main>
 
@@ -237,6 +237,12 @@
     for (let t = niceMin; t <= niceMax + step * 0.001; t += step) ticks.push(Math.round(t * 100) / 100);
     return ticks;
   }
+
+  // at 60 points a fixed 640px canvas gets cramped — widen it and let
+  // .chart-wrap's overflow-x:auto scroll, same pattern as the main report
+  function chartWidthFor(n, pxPerPoint) { return Math.max(640, Math.round(n * pxPerPoint)); }
+  function labelStrideFor(n) { return Math.max(1, Math.ceil(n / 8)); }
+  function applyIntrinsicWidth(svg, W) { svg.style.width = W > 640 ? W + "px" : ""; }
 
   function attachCrosshair(svg, { marginL, marginR, marginT, marginB, W, H, indexAtX, xForIndex, dates, tooltip, buildRows, unit }) {
     const line = el("line", { x1: 0, x2: 0, y1: marginT, y2: H - marginB, class: "crosshair-line" });
@@ -292,7 +298,10 @@
     opts = opts || {};
     const svg = document.getElementById(svgId);
     svg.innerHTML = "";
-    const W = 640, H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const W = chartWidthFor(dates.length, opts.pxPerPoint || 14);
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    applyIntrinsicWidth(svg, W);
     const marginL = 60, marginR = 16, marginT = 16, marginB = 26;
     const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
 
@@ -331,7 +340,7 @@
       });
     });
 
-    const stride = Math.max(1, Math.ceil(dates.length / 8));
+    const stride = labelStrideFor(dates.length);
     dates.forEach((d, i) => {
       if (i % stride === 0 || i === dates.length - 1) {
         const xl = el("text", { x: xToPx(i), y: H - marginB + 15, class: "x-label" });
@@ -354,7 +363,10 @@
     opts = opts || {};
     const svg = document.getElementById(svgId);
     svg.innerHTML = "";
-    const W = 640, H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const H = parseFloat(svg.getAttribute("viewBox").split(" ")[3]);
+    const W = chartWidthFor(dates.length, opts.pxPerPoint || (seriesList.length >= 3 ? 20 : 14));
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    applyIntrinsicWidth(svg, W);
     const marginL = 60, marginR = 16, marginT = 16, marginB = 26;
     const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
 
@@ -380,7 +392,7 @@
     const gap = 1.5;
     const barW = Math.max(2, Math.min(12, (groupW - 4) / n - gap));
     const totalBarsW = n * barW + (n - 1) * gap;
-    const stride = Math.max(1, Math.ceil(dates.length / 8));
+    const stride = labelStrideFor(dates.length);
 
     dates.forEach((d, i) => {
       const groupX = marginL + i * groupW;
@@ -420,7 +432,7 @@
     if (!code) return;
     btn.disabled = true;
     status.className = "";
-    status.textContent = "查詢中，第一次查詢新的交易日可能要等 20~40 秒…";
+    status.textContent = "查詢中，第一次查詢新的交易日可能要等 1~3 分鐘…";
     card.classList.remove("show");
 
     try {

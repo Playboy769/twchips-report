@@ -9,6 +9,7 @@ stampeding TWSE for the same date.
 """
 import datetime as dt
 import threading
+import time
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -20,8 +21,9 @@ from twchips import twse
 app = FastAPI()
 
 ROOT_DIR = __import__("pathlib").Path(__file__).parent
-LOOKBACK_DAYS = 20
-MAX_CALENDAR_SPAN = 45  # safety cap in case of an unusually long holiday run
+LOOKBACK_DAYS = 60
+MAX_CALENDAR_SPAN = 120  # 60 weekdays needs ~84 calendar days minimum; buffer for holidays
+FETCH_SLEEP = 0.4  # be polite to TWSE between the two per-date requests
 
 _cache_lock = threading.Lock()
 _date_locks: dict[str, threading.Lock] = {}
@@ -45,7 +47,9 @@ def _fetch_date_tables(date_str: str):
         if date_str in _margin_cache:  # re-check after acquiring lock
             return
         margin_df = twse.margin_stocks(date_str)
+        time.sleep(FETCH_SLEEP)
         inst_df = twse.institutional_stocks(date_str)
+        time.sleep(FETCH_SLEEP)
         _margin_cache[date_str] = margin_df
         _inst_cache[date_str] = inst_df
 
