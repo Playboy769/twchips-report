@@ -1,10 +1,25 @@
 """Incrementally fetch new trading days via twchips and regenerate index.html.
 
-Only fetches dates not already in data/history.json (fixed start 2026-04-30,
+Only fetches dates not already in data/history.json (fixed start 2020-01-01,
 window grows forward — never rolls). Only touches the embedded data blobs
-(`const A = …`, `const MAINT = …`, the #live-range/#live-days header spans) —
-never the hand-written finding/thesis prose, which is a frozen snapshot as of
-2026-07-31 (see the <p class="snapshot-note"> in index.html).
+(`const A = …`, `const L = …`, `const MAINT = …`, the #live-range/#live-days
+header spans) — never the hand-written finding/thesis prose, which is a frozen
+snapshot as of 2026-08-07 (see the warning card in index.html).
+
+Two windows, deliberately different:
+
+* `const A` — the DAILY near-term series every existing chart is built on, and
+  the window all the hand-written prose describes. Starts at ANALYSIS_START and
+  grows forward. Do not widen this to the full history: the prose quotes
+  "全期最高/最低" and day counts against exactly this window, and 1,600 daily
+  points would render as a ~30,000px-wide SVG.
+* `const L` — MONTHLY aggregates over the whole history back to FIXED_START,
+  for the long-range overview charts. Aggregating is what keeps index.html a
+  sane size; embedding six years of daily rows would add well over a megabyte.
+
+History before ANALYSIS_START is backfilled by backfill.py and covers only the
+cheap datasets (institutional flows, margin, and TAIFEX futures where served),
+so `const L` exposes only those. See backfill.py for why.
 
 Safe to run repeatedly: if there are no new trading days, it's a no-op and
 exits without touching index.html, so the GitHub Action won't create empty
@@ -25,15 +40,16 @@ HISTORY_PATH = ROOT / "data" / "history.json"
 MAINTENANCE_PATH = ROOT / "data" / "maintenance.json"
 INDEX_PATH = ROOT / "index.html"
 
-FIXED_START = dt.date(2026, 4, 30)
+FIXED_START = dt.date(2020, 1, 1)      # history / long-range chart start
+ANALYSIS_START = dt.date(2026, 4, 30)  # near-term daily window the prose describes
 SLEEP = 1.0  # be polite to TWSE/TAIFEX between requests
 
-# TWSE/TAIFEX publish in Taipei time, so "what's the latest fetchable session"
-# has to be asked on a Taipei clock — not the runner's UTC one, which is 8
-# hours behind and rolls the date over mid-Taipei-afternoon.
+# TWSE/TAIFEX publish in Taipei time, so the "what's the latest fetchable
+# session" question has to be asked in Taipei time — not the runner's UTC
+# clock, which is 8 hours behind and rolls over mid-Taipei-afternoon.
 TAIPEI = dt.timezone(dt.timedelta(hours=8))
-# Market closes 13:30 Taipei and the end-of-day institutional/margin files land
-# within the hour. Past this, the same session is safe to fetch.
+# Market closes 13:30 Taipei and the end-of-day institutional/margin files
+# land within the hour. Past this, the same session is safe to fetch.
 SAME_DAY_READY_HOUR = 15
 
 
@@ -190,7 +206,10 @@ def fetch_day(date_str, history):
 
 
 def compute_analysis_data(history):
-    dates = sorted({r["date"] for r in history["twse"]})
+    # near-term window only — see the module docstring for why this must not
+    # widen to the full backfilled history
+    start = ANALYSIS_START.isoformat()
+    dates = sorted({r["date"] for r in history["twse"] if r["date"] >= start})
     mmdd = [d[5:].replace("-", "/") for d in dates]
 
     twse_by_date, taifex_by_date, options_by_date = {}, {}, {}
@@ -277,7 +296,9 @@ def compute_analysis_data(history):
             "is_outlier": abs(r["foreign_100m"]) > 1.5 * mean_abs,
         })
 
-    fsi_rows = [r for r in history["twse"] if r["category"] == "外資自營商"]
+    # scoped to the analysis window, like everything else in `A` — the prose
+    # claims "69 個交易日裡全部是 0", not "since 2020"
+    fsi_rows = [r for r in history["twse"] if r["category"] == "外資自營商" and r["date"] >= start]
     fsi_always_zero = all(r["buy"] == 0 and r["sell"] == 0 and r["net"] == 0 for r in fsi_rows)
 
     return {
@@ -289,19 +310,84 @@ def compute_analysis_data(history):
         "n_days": len(dates), "n_aligned": sum(1 for r in divergence if r["aligned"]),
         "n_outliers": sum(1 for r in trend_outlier if r["is_outlier"]),
         "cumulative_final_100m": round(cum, 1),
-        "skipped_dates": history.get("skipped_dates", []),
+        "skipped_dates": [d for d in history.get("skipped_dates", []) if d >= start],
     }
 
 
-def inject_into_index(analysis_data, maintenance):
+def compute_longterm_data(history):
+    """Monthly aggregates over the whole history, for the long-range charts.
+
+    Only the datasets backfill.py covers: foreign spot net flow, margin
+    balances, and foreign futures OI. Months where a series has no data at all
+    (TAIFEX before its rolling window) get None so the chart can break the line
+    instead of drawing a fake zero.
+    """
+    twse_by_date = {}
+    for r in history["twse"]:
+        twse_by_date.setdefault(r["date"], {})[r["category"]] = r
+    taifex_by_date = {}
+    for r in history["taifex"]:
+        if r["category"] == "外資及陸資":
+            taifex_by_date[r["date"]] = r
+    margin_by_date = {r["date"]: r for r in history["margin"]}
+
+    months = {}
+    for d in sorted(twse_by_date):
+        tw = twse_by_date[d]
+        if "外資及陸資(不含外資自營商)" not in tw:
+            continue
+        m = months.setdefault(d[:7], {"days": 0, "foreign": 0.0, "dealer": 0.0, "trust": 0.0,
+                                      "prop": 0.0, "hedge": 0.0,
+                                      "oi": None, "fin": None, "short": None, "last": d})
+        m["days"] += 1
+        m["last"] = d
+        m["foreign"] += (tw["外資及陸資(不含外資自營商)"]["net"] + tw["外資自營商"]["net"]) / 1e8
+        m["dealer"] += (tw["自營商(自行買賣)"]["net"] + tw["自營商(避險)"]["net"]) / 1e8
+        m["trust"] += tw["投信"]["net"] / 1e8
+        m["prop"] += tw["自營商(自行買賣)"]["net"] / 1e8
+        m["hedge"] += tw["自營商(避險)"]["net"] / 1e8
+        # balances/OI are levels, not flows: carry the month's last observation
+        if d in taifex_by_date:
+            m["oi"] = round(taifex_by_date[d]["oi_net_amt"] / 100, 1)
+        if d in margin_by_date:
+            m["fin"] = margin_by_date[d]["financing_balance"]
+            m["short"] = margin_by_date[d]["short_balance"]
+
+    keys = sorted(months)
+    return {
+        "months": keys,
+        "labels": [k.replace("-", "/") for k in keys],
+        "days": [months[k]["days"] for k in keys],
+        "foreign_net_100m": [round(months[k]["foreign"], 1) for k in keys],
+        "dealer_net_100m": [round(months[k]["dealer"], 1) for k in keys],
+        "trust_net_100m": [round(months[k]["trust"], 1) for k in keys],
+        "prop_net_100m": [round(months[k]["prop"], 1) for k in keys],
+        "hedge_net_100m": [round(months[k]["hedge"], 1) for k in keys],
+        "fut_oi_net_amt_100m": [months[k]["oi"] for k in keys],
+        "financing_balance": [months[k]["fin"] for k in keys],
+        "short_balance": [months[k]["short"] for k in keys],
+        "n_months": len(keys),
+        "n_days": sum(months[k]["days"] for k in keys),
+        "first_date": months[keys[0]]["last"][:8] + "01" if keys else None,
+        "last_date": months[keys[-1]]["last"] if keys else None,
+    }
+
+
+def inject_into_index(analysis_data, longterm_data, maintenance):
     html = INDEX_PATH.read_text(encoding="utf-8")
 
     new_json = json.dumps(analysis_data, ensure_ascii=False)
-    pattern_a = re.compile(r"const A = \{.*?\};\n(\s*(?:function tooltipFor|const svgNS))", re.S)
+    pattern_a = re.compile(r"const A = \{.*?\};\n(\s*(?:function tooltipFor|const svgNS|const L))", re.S)
     m = pattern_a.search(html)
     if not m:
         raise RuntimeError("could not find `const A = {...};` blob in index.html")
     html = pattern_a.sub(lambda mm: f"const A = {new_json};\n{mm.group(1)}", html, count=1)
+
+    new_l_json = json.dumps(longterm_data, ensure_ascii=False)
+    pattern_l = re.compile(r"const L = \{.*?\};\n", re.S)
+    if not pattern_l.search(html):
+        raise RuntimeError("could not find `const L = {...};` blob in index.html")
+    html = pattern_l.sub(f"const L = {new_l_json};\n", html, count=1)
 
     maint_sorted = sorted(maintenance, key=lambda r: r["date"])
     maint_js = [{"date": r["date"][5:].replace("-", "/"), "ratio": r["ratio"]} for r in maint_sorted]
@@ -315,6 +401,11 @@ def inject_into_index(analysis_data, maintenance):
     html = re.sub(r'(<span id="live-range">)[^<]*(</span>)', rf"\g<1>{date_range}\g<2>", html)
     html = re.sub(r'(<span id="live-days">)[^<]*(</span>)', rf"\g<1>{analysis_data['n_days']}\g<2>", html)
 
+    lt_range = f"{longterm_data['labels'][0]} – {longterm_data['labels'][-1]}"
+    html = re.sub(r'(<span id="lt-range">)[^<]*(</span>)', rf"\g<1>{lt_range}\g<2>", html)
+    html = re.sub(r'(<span id="lt-days">)[^<]*(</span>)', rf"\g<1>{longterm_data['n_days']}\g<2>", html)
+    html = re.sub(r'(<span id="lt-months">)[^<]*(</span>)', rf"\g<1>{longterm_data['n_months']}\g<2>", html)
+
     INDEX_PATH.write_text(html, encoding="utf-8")
 
 
@@ -324,20 +415,22 @@ def main():
 
     have = cached_dates(history)
     last_cached = dt.date.fromisoformat(max(have)) if have else FIXED_START - dt.timedelta(days=1)
+
     # Include TODAY's session once it's published, instead of always stopping
     # at yesterday. The old `dt.date.today() - 1` cost a full day of freshness
     # on every run: the workflow fires at 13:00 UTC = 21:00 Taipei, 7.5 hours
     # after the close, and still threw that session away — the 2026-08-13 run
     # logged "fetching 1 candidate weekday(s): 2026-08-12 .. 2026-08-12" and
-    # published a report ending at 08-12, which is what "not auto-updating"
-    # looked like from outside. The workflow's own comment ("21:00 Taipei —
-    # comfortably after TWSE/TAIFEX finalize same-day stats") shows same-day
-    # was always the intent; only this line disagreed.
+    # published a report that stopped at 08-12, which is what "未自動更新"
+    # actually looked like from outside. The workflow's own comment ("21:00
+    # Taipei — comfortably after TWSE/TAIFEX finalize same-day stats") shows
+    # same-day was always the intent; only this line disagreed.
     #
-    # Before the cutoff hour we still stop at yesterday, so running build.py by
-    # hand mid-morning doesn't chase a session that hasn't closed. A same-day
-    # fetch that comes back empty is not sticky either: `last_cached` only
-    # advances on days that actually returned data, so the next run retries it.
+    # Before the cutoff hour we still stop at yesterday, so running build.py
+    # by hand mid-morning doesn't try to fetch a session that hasn't happened.
+    # And a same-day fetch that comes back empty is not sticky: `last_cached`
+    # only advances on days that actually returned data, so the next run
+    # re-attempts it.
     now_taipei = dt.datetime.now(TAIPEI)
     target_end = now_taipei.date()
     if now_taipei.hour < SAME_DAY_READY_HOUR:
@@ -347,11 +440,18 @@ def main():
         print(f"up to date (last cached {last_cached}, target {target_end}); nothing to do")
         return 0
 
+    # Deliberately NOT filtering out `skipped_dates` here: a day lands there
+    # both for real holidays AND for transient TWSE rate-limiting (which
+    # backfill.py's notes put at ~4-5% of days), and the two are
+    # indistinguishable at this point. Re-attempting a known holiday costs one
+    # wasted request; permanently skipping a rate-limited day would silently
+    # lose a real trading session forever. Retrying is the safe direction.
     candidates = weekdays_between(last_cached + dt.timedelta(days=1), target_end)
     if not candidates:
         print(f"no weekdays between {last_cached} and {target_end} (weekend gap); nothing to do")
         return 0
-    print(f"fetching {len(candidates)} candidate weekday(s): {candidates[0]} .. {candidates[-1]}")
+    print(f"fetching {len(candidates)} candidate weekday(s): {candidates[0]} .. {candidates[-1]} "
+          f"(Taipei now {now_taipei:%Y-%m-%d %H:%M})")
 
     maint_dates_have = {r["date"] for r in maintenance}
     new_dates = []
@@ -370,14 +470,10 @@ def main():
                 else:
                     print(f"  {d}: fetched (maintenance ratio unavailable)")
         else:
-            # Deduped: candidates deliberately re-include previously skipped
-            # days (a day lands in skipped_dates both for real holidays AND
-            # for transient TWSE rate-limiting, and the two are
-            # indistinguishable here — retrying a holiday costs one request,
-            # permanently skipping a rate-limited day would silently lose a
-            # real session). A trailing holiday is therefore re-attempted each
-            # run until a later day with data moves `last_cached` past it, and
-            # a plain append would stack a duplicate every time.
+            # Deduped: since candidates deliberately re-include previously
+            # skipped days (see above), a trailing holiday gets re-attempted
+            # on every run until a later day with data moves `last_cached`
+            # past it, and a plain append would stack a duplicate each time.
             skipped = history.setdefault("skipped_dates", [])
             if d not in skipped:
                 skipped.append(d)
@@ -391,7 +487,8 @@ def main():
     MAINTENANCE_PATH.write_text(json.dumps(maintenance, ensure_ascii=False, indent=2), encoding="utf-8")
 
     analysis_data = compute_analysis_data(history)
-    inject_into_index(analysis_data, maintenance)
+    longterm_data = compute_longterm_data(history)
+    inject_into_index(analysis_data, longterm_data, maintenance)
     print(f"updated index.html: {analysis_data['n_days']} trading days through {analysis_data['dates'][-1]}")
     return 0
 
