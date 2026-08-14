@@ -28,6 +28,14 @@ INDEX_PATH = ROOT / "index.html"
 FIXED_START = dt.date(2026, 4, 30)
 SLEEP = 1.0  # be polite to TWSE/TAIFEX between requests
 
+# TWSE/TAIFEX publish in Taipei time, so "what's the latest fetchable session"
+# has to be asked on a Taipei clock — not the runner's UTC one, which is 8
+# hours behind and rolls the date over mid-Taipei-afternoon.
+TAIPEI = dt.timezone(dt.timedelta(hours=8))
+# Market closes 13:30 Taipei and the end-of-day institutional/margin files land
+# within the hour. Past this, the same session is safe to fetch.
+SAME_DAY_READY_HOUR = 15
+
 
 def load_history():
     with open(HISTORY_PATH, encoding="utf-8") as f:
@@ -316,7 +324,24 @@ def main():
 
     have = cached_dates(history)
     last_cached = dt.date.fromisoformat(max(have)) if have else FIXED_START - dt.timedelta(days=1)
-    target_end = dt.date.today() - dt.timedelta(days=1)  # yesterday: avoids "not yet published" races
+    # Include TODAY's session once it's published, instead of always stopping
+    # at yesterday. The old `dt.date.today() - 1` cost a full day of freshness
+    # on every run: the workflow fires at 13:00 UTC = 21:00 Taipei, 7.5 hours
+    # after the close, and still threw that session away — the 2026-08-13 run
+    # logged "fetching 1 candidate weekday(s): 2026-08-12 .. 2026-08-12" and
+    # published a report ending at 08-12, which is what "not auto-updating"
+    # looked like from outside. The workflow's own comment ("21:00 Taipei —
+    # comfortably after TWSE/TAIFEX finalize same-day stats") shows same-day
+    # was always the intent; only this line disagreed.
+    #
+    # Before the cutoff hour we still stop at yesterday, so running build.py by
+    # hand mid-morning doesn't chase a session that hasn't closed. A same-day
+    # fetch that comes back empty is not sticky either: `last_cached` only
+    # advances on days that actually returned data, so the next run retries it.
+    now_taipei = dt.datetime.now(TAIPEI)
+    target_end = now_taipei.date()
+    if now_taipei.hour < SAME_DAY_READY_HOUR:
+        target_end -= dt.timedelta(days=1)
 
     if last_cached >= target_end:
         print(f"up to date (last cached {last_cached}, target {target_end}); nothing to do")
@@ -345,8 +370,18 @@ def main():
                 else:
                     print(f"  {d}: fetched (maintenance ratio unavailable)")
         else:
-            history.setdefault("skipped_dates", []).append(d)
-            print(f"  {d}: no data (holiday)")
+            # Deduped: candidates deliberately re-include previously skipped
+            # days (a day lands in skipped_dates both for real holidays AND
+            # for transient TWSE rate-limiting, and the two are
+            # indistinguishable here — retrying a holiday costs one request,
+            # permanently skipping a rate-limited day would silently lose a
+            # real session). A trailing holiday is therefore re-attempted each
+            # run until a later day with data moves `last_cached` past it, and
+            # a plain append would stack a duplicate every time.
+            skipped = history.setdefault("skipped_dates", [])
+            if d not in skipped:
+                skipped.append(d)
+            print(f"  {d}: no data (holiday or fetch failed; will retry next run)")
 
     if not new_dates:
         print("no new trading days had data; nothing to update")
