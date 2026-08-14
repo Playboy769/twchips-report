@@ -40,20 +40,20 @@
     "unmatched": 68
   },
   {
-    "date": "2026-07-31",
-    "ratio": 169.81165367301398,
-    "collateral_value": 861730923210.0,
-    "financing_amt": 507462771000,
-    "matched": 1225,
-    "unmatched": 66
-  },
-  {
     "date": "2026-07-29",
     "ratio": 158.0
   },
   {
     "date": "2026-07-30",
     "ratio": 156.7
+  },
+  {
+    "date": "2026-07-31",
+    "ratio": 169.81165367301398,
+    "collateral_value": 861730923210.0,
+    "financing_amt": 507462771000,
+    "matched": 1225,
+    "unmatched": 66
   },
   {
     "date": "2026-08-03",
