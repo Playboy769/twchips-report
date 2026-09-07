@@ -35999,6 +35999,54 @@
       "oi_short_amt": 1240380,
       "oi_net_lots": -489550,
       "oi_net_amt": -968187
+    },
+    {
+      "date": "2026-09-07",
+      "category": "自營商",
+      "long_lots": 170462,
+      "long_amt": 102440,
+      "short_lots": 160356,
+      "short_amt": 112840,
+      "net_lots": 10106,
+      "net_amt": -10400,
+      "oi_long_lots": 179996,
+      "oi_long_amt": 85132,
+      "oi_short_lots": 427019,
+      "oi_short_amt": 314523,
+      "oi_net_lots": -247023,
+      "oi_net_amt": -229391
+    },
+    {
+      "date": "2026-09-07",
+      "category": "投信",
+      "long_lots": 544,
+      "long_amt": 3424,
+      "short_lots": 1402,
+      "short_amt": 10501,
+      "net_lots": -858,
+      "net_amt": -7077,
+      "oi_long_lots": 94296,
+      "oi_long_amt": 767930,
+      "oi_short_lots": 8012,
+      "oi_short_amt": 30195,
+      "oi_net_lots": 86284,
+      "oi_net_amt": 737735
+    },
+    {
+      "date": "2026-09-07",
+      "category": "外資及陸資",
+      "long_lots": 668150,
+      "long_amt": 893932,
+      "short_lots": 663060,
+      "short_amt": 878134,
+      "net_lots": 5090,
+      "net_amt": 15798,
+      "oi_long_lots": 262539,
+      "oi_long_amt": 296778,
+      "oi_short_lots": 754473,
+      "oi_short_amt": 1265664,
+      "oi_net_lots": -491934,
+      "oi_net_amt": -968886
     }
   ],
   "skipped_dates": [
@@ -36748,6 +36796,13 @@
       "trust_net": -322024,
       "dealer_net": 406740,
       "total_net": 1969801
+    },
+    {
+      "date": "2026-09-07",
+      "foreign_net": 16135314,
+      "trust_net": -367588,
+      "dealer_net": 720108,
+      "total_net": 16487834
     }
   ],
   "margin": [
@@ -48104,6 +48159,13 @@
       "short_net_lots": -536,
       "financing_balance": 8919251,
       "short_balance": 219160
+    },
+    {
+      "date": "2026-09-07",
+      "financing_net_lots": 59605,
+      "short_net_lots": 7085,
+      "financing_balance": 9073251,
+      "short_balance": 211213
     }
   ],
   "options": [
@@ -55048,6 +55110,84 @@
       "net_amt": -17941,
       "oi_net_lots": -560,
       "oi_net_amt": 28616
+    },
+    {
+      "date": "2026-09-07",
+      "side": "CALL",
+      "category": "自營商",
+      "buy_lots": 32361,
+      "buy_amt": 412656,
+      "sell_lots": 33688,
+      "sell_amt": 374072,
+      "net_lots": -1327,
+      "net_amt": 38584,
+      "oi_net_lots": 5325,
+      "oi_net_amt": 542920
+    },
+    {
+      "date": "2026-09-07",
+      "side": "CALL",
+      "category": "投信",
+      "buy_lots": 0,
+      "buy_amt": 0,
+      "sell_lots": 297,
+      "sell_amt": 18190,
+      "net_lots": -297,
+      "net_amt": -18190,
+      "oi_net_lots": -4414,
+      "oi_net_amt": -431941
+    },
+    {
+      "date": "2026-09-07",
+      "side": "CALL",
+      "category": "外資及陸資",
+      "buy_lots": 38544,
+      "buy_amt": 439349,
+      "sell_lots": 37465,
+      "sell_amt": 429909,
+      "net_lots": 1079,
+      "net_amt": 9441,
+      "oi_net_lots": -2319,
+      "oi_net_amt": -412287
+    },
+    {
+      "date": "2026-09-07",
+      "side": "PUT",
+      "category": "自營商",
+      "buy_lots": 42877,
+      "buy_amt": 318911,
+      "sell_lots": 45790,
+      "sell_amt": 359649,
+      "net_lots": -2913,
+      "net_amt": -40738,
+      "oi_net_lots": -3437,
+      "oi_net_amt": 58911
+    },
+    {
+      "date": "2026-09-07",
+      "side": "PUT",
+      "category": "投信",
+      "buy_lots": 0,
+      "buy_amt": 0,
+      "sell_lots": 0,
+      "sell_amt": 0,
+      "net_lots": 0,
+      "net_amt": 0,
+      "oi_net_lots": 106,
+      "oi_net_amt": 52
+    },
+    {
+      "date": "2026-09-07",
+      "side": "PUT",
+      "category": "外資及陸資",
+      "buy_lots": 49380,
+      "buy_amt": 411940,
+      "sell_lots": 48796,
+      "sell_amt": 412829,
+      "net_lots": 584,
+      "net_amt": -889,
+      "oi_net_lots": 24,
+      "oi_net_amt": 32933
     }
   ],
   "twse": [
@@ -123174,6 +123314,48 @@
       "buy": 416527260086,
       "sell": 354855111502,
       "net": 61672148584
+    },
+    {
+      "date": "2026-09-07",
+      "category": "自營商(自行買賣)",
+      "buy": 15663342153,
+      "sell": 9691784786,
+      "net": 5971557367
+    },
+    {
+      "date": "2026-09-07",
+      "category": "自營商(避險)",
+      "buy": 41355212106,
+      "sell": 31639698089,
+      "net": 9715514017
+    },
+    {
+      "date": "2026-09-07",
+      "category": "投信",
+      "buy": 25265407299,
+      "sell": 16541354830,
+      "net": 8724052469
+    },
+    {
+      "date": "2026-09-07",
+      "category": "外資及陸資(不含外資自營商)",
+      "buy": 378405761938,
+      "sell": 290098023293,
+      "net": 88307738645
+    },
+    {
+      "date": "2026-09-07",
+      "category": "外資自營商",
+      "buy": 0,
+      "sell": 0,
+      "net": 0
+    },
+    {
+      "date": "2026-09-07",
+      "category": "合計",
+      "buy": 460689723496,
+      "sell": 347970860998,
+      "net": 112718862498
     }
   ]
 }
