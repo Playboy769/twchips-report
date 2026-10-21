@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>個股融資融券／三大法人查詢</title>
+<script>
+  // Apply saved theme before first paint so there's no light->dark flash.
+  // Default is always light unless the visitor explicitly switched to dark —
+  // this intentionally does NOT follow prefers-color-scheme.
+  (function () {
+    try {
+      if (localStorage.getItem("twchips_theme") === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) {}
+  })();
+</script>
 <style>
   :root {
     color-scheme: light;
@@ -24,26 +36,28 @@
     --s-yellow:  #eda100;
     --s-magenta: #e87ba4;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --surface-1:      #1a1a19;
-      --page:           #0d0d0d;
-      --text-primary:   #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted:     #898781;
-      --gridline:       #2c2c2a;
-      --baseline:       #383835;
-      --border:         rgba(255,255,255,0.10);
-      --row-hover:      rgba(255,255,255,0.04);
-      --scrollbar-thumb:       #55534e;
-      --scrollbar-thumb-hover: #726f68;
-      --s-dealer:  #3987e5;
-      --s-trust:   #d95926;
-      --s-foreign: #199e70;
-      --s-yellow:  #c98500;
-      --s-magenta: #d55181;
-    }
+  /* Manual dark palette — only applied via data-theme="dark" on <html>,
+     set by the toggle button below. No automatic prefers-color-scheme
+     switch: default stays light regardless of OS/browser theme.
+     Same derived values as index.html's dark palette for consistency. */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:      #1c1f22;
+    --page:           #0e1012;
+    --text-primary:   #f2f3f1;
+    --text-secondary: #b9bec2;
+    --text-muted:     #80868c;
+    --gridline:       #2a2e32;
+    --baseline:       #3a3f44;
+    --border:         rgba(255,255,255,0.12);
+    --row-hover:      rgba(255,255,255,0.05);
+    --scrollbar-thumb:       #4b5157;
+    --scrollbar-thumb-hover: #6b7177;
+    --s-dealer:  #4c9bf0;
+    --s-trust:   #ff8a52;
+    --s-foreign: #35cf96;
+    --s-yellow:  #e6b94a;
+    --s-magenta: #f08cb4;
   }
   * { box-sizing: border-box; }
   body {
@@ -151,9 +165,36 @@
   @media (max-width: 480px) {
     .stat-row { grid-template-columns: 1fr; }
   }
+
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 24px;
+    z-index: 200;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  }
+  .theme-toggle:hover { filter: brightness(1.08); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--s-dealer); outline-offset: 2px; }
+  .theme-toggle .icon { font-size: 14px; }
 </style>
 </head>
 <body>
+<button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">
+  <span class="icon" aria-hidden="true">🌙</span><span class="label">深色模式</span>
+</button>
 <main>
   <a class="back-link" href="/">← 回市場結構報告</a>
   <h1>個股融資融券／三大法人查詢</h1>
@@ -490,6 +531,31 @@
 
   btn.addEventListener("click", runSearch);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+})();
+</script>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var toggle = document.getElementById("theme-toggle");
+  if (!toggle) return;
+  function sync() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    toggle.querySelector(".icon").textContent = dark ? "☀️" : "🌙";
+    toggle.querySelector(".label").textContent = dark ? "淺色模式" : "深色模式";
+    toggle.setAttribute("aria-pressed", dark ? "true" : "false");
+  }
+  toggle.addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark";
+    if (dark) {
+      root.removeAttribute("data-theme");
+    } else {
+      root.setAttribute("data-theme", "dark");
+    }
+    try { localStorage.setItem("twchips_theme", dark ? "light" : "dark"); } catch (e) {}
+    sync();
+  });
+  sync();
 })();
 </script>
 </body>
